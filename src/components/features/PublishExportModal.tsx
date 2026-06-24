@@ -20,7 +20,15 @@ import {
   Linkedin, 
   FileJson, 
   FileSpreadsheet, 
-  Globe 
+  Globe,
+  Share2,
+  Facebook,
+  Instagram,
+  Copy,
+  ExternalLink,
+  Smartphone,
+  Mail,
+  MessageSquare
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -40,6 +48,8 @@ export function PublishExportModal({ isOpen, onClose, suggestion }: PublishExpor
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('09:00');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [draftText, setDraftText] = useState('');
+  const [copiedText, setCopiedText] = useState(false);
 
   // Simulation steps
   const [publishStep, setPublishStep] = useState<number>(0); // 0 = Idle, 1 = Connecting, 2 = Optimizing, 3 = Transmitting, 4 = Success
@@ -51,6 +61,9 @@ export function PublishExportModal({ isOpen, onClose, suggestion }: PublishExpor
       setPlatform(suggestion.platform || 'Twitter/X');
       const today = new Date().toISOString().split('T')[0];
       setScheduleDate(today);
+
+      const formattedText = `${suggestion.engagementHook}\n\n${suggestion.content}\n\n${suggestion.hashtags.map(h => h.startsWith('#') ? h : `#${h}`).join(' ')}`;
+      setDraftText(formattedText);
 
       // Extract best time guess from helper if possible
       if (suggestion.bestTimeToPost) {
@@ -111,6 +124,97 @@ export function PublishExportModal({ isOpen, onClose, suggestion }: PublishExpor
       { platform, scheduleDate, scheduleTime }
     );
     toast.success(`Direct simulation successful! Draft added on Calendar.`);
+  };
+
+  // Real-world Web Share API / Native Device sharing integration
+  const handleDirectShareAPI = async () => {
+    if (!suggestion) return;
+    const shareText = draftText;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Pulsr AI Draft: ${suggestion.headline}`,
+          text: shareText,
+          url: window.location.origin
+        });
+        trackEvent('calendar_interaction', 'Shared draft via Device Share API', { suggestionId: suggestion.id });
+        toast.success('Successfully opened device sharing options!');
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.warn('Web Share API error:', err);
+          toast.error('Sharing was cancelled or unsupported.');
+        }
+      }
+    } else {
+      // Fallback: Copy to Clipboard and prompt
+      navigator.clipboard.writeText(shareText);
+      trackEvent('calendar_interaction', 'Copied draft as fallback for Share API', { suggestionId: suggestion.id });
+      toast.success('Full draft text copied to clipboard!');
+    }
+  };
+
+  // Specific Social Media direct links / intent APIs
+  const handleShareToPlatform = (target: string) => {
+    if (!suggestion) return;
+    const fullText = draftText;
+    
+    // Auto-copy to clipboard first to ensure maximum convenience
+    navigator.clipboard.writeText(fullText);
+
+    let url = '';
+    let successMsg = 'Caption copied! Opening creation portal...';
+
+    switch (target.toLowerCase()) {
+      case 'twitter':
+      case 'x':
+        url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(fullText)}`;
+        successMsg = 'Draft copied! Opening X / Twitter composer...';
+        break;
+      case 'linkedin':
+        url = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(fullText)}`;
+        successMsg = 'Draft copied! Opening LinkedIn post section...';
+        break;
+      case 'facebook':
+        url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodeURIComponent(fullText)}`;
+        successMsg = 'Draft copied! Opening Facebook Share (Paste inside)...';
+        break;
+      case 'threads':
+        url = `https://threads.net/intent/post?text=${encodeURIComponent(fullText)}`;
+        successMsg = 'Draft copied! Opening Threads composer...';
+        break;
+      case 'instagram':
+        url = 'https://www.instagram.com/';
+        successMsg = 'Caption copied! Opening Instagram... Create post & paste.';
+        break;
+      case 'tiktok':
+        url = 'https://www.tiktok.com/upload';
+        successMsg = 'Caption copied! Opening TikTok upload... Paste caption.';
+        break;
+      case 'whatsapp':
+        url = `https://api.whatsapp.com/send?text=${encodeURIComponent(fullText)}`;
+        successMsg = 'Draft copied! Opening WhatsApp chat...';
+        break;
+      case 'telegram':
+        url = `https://t.me/share/url?url=${encodeURIComponent(window.location.origin)}&text=${encodeURIComponent(fullText)}`;
+        successMsg = 'Draft copied! Opening Telegram chat...';
+        break;
+      case 'email':
+        url = `mailto:?subject=${encodeURIComponent("Pulsr Social Media Draft: " + suggestion.headline)}&body=${encodeURIComponent(fullText)}`;
+        successMsg = 'Draft copied! Opening Email composer...';
+        break;
+      default:
+        url = 'https://www.google.com';
+        break;
+    }
+
+    trackEvent('calendar_interaction', `Shared draft to specific portal: ${target}`, { suggestionId: suggestion.id });
+    toast.success(successMsg);
+    
+    // Open in a new tab safely
+    setTimeout(() => {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }, 600);
   };
 
   // 2. Export single suggestion JSON package
@@ -238,85 +342,225 @@ export function PublishExportModal({ isOpen, onClose, suggestion }: PublishExpor
 
         {/* Action Choice Tab split */}
         {publishStep === 0 ? (
-          <div className="space-y-5">
-            {/* Form configuration fields */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[10px] uppercase font-mono font-bold tracking-wider text-muted block mb-1">Target Platform</label>
-                <select 
-                  value={platform} 
-                  onChange={(e) => setPlatform(e.target.value)}
-                  className="w-full text-xs font-mono rounded-xl bg-surface border border-border-accent/40 text-text-main p-2.5 h-[44px]"
+          <div className="space-y-6">
+            {/* Interactive Draft Caption Tweak Area */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] uppercase font-mono font-bold tracking-wider text-accent flex items-center gap-1.5">
+                  <Sparkles className="h-3 w-3 text-accent animate-pulse" /> Live Caption Tweak Area
+                </label>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(draftText);
+                    setCopiedText(true);
+                    toast.success('Formatted post copied to clipboard!');
+                    setTimeout(() => setCopiedText(false), 2000);
+                  }}
+                  className="text-[10px] font-mono text-accent hover:text-bright flex items-center gap-1 transition-colors bg-accent/10 border border-accent/25 px-2 py-0.5 rounded-md cursor-pointer"
                 >
-                  <option value="Twitter/X">Twitter / X</option>
-                  <option value="LinkedIn">LinkedIn</option>
-                  <option value="Instagram">Instagram</option>
-                  <option value="Threads">Threads</option>
-                  <option value="TikTok">TikTok</option>
-                </select>
+                  {copiedText ? (
+                    <>
+                      <Check className="h-3 w-3 text-[#22C55E]" /> Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3 w-3" /> Copy Full Draft
+                    </>
+                  )}
+                </button>
               </div>
-
-              <div>
-                <label className="text-[10px] uppercase font-mono font-bold tracking-wider text-muted block mb-1">Schedule date</label>
-                <Input 
-                  type="date" 
-                  value={scheduleDate} 
-                  onChange={(e) => setScheduleDate(e.target.value)}
-                  className="text-xs h-[44px]"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[10px] uppercase font-mono font-bold tracking-wider text-muted block mb-1">Suggested hour</label>
-                <Input 
-                  type="time" 
-                  value={scheduleTime} 
-                  onChange={(e) => setScheduleTime(e.target.value)}
-                  className="text-xs h-[44px]"
-                />
-              </div>
-
-              <div>
-                <label className="text-[10px] uppercase font-mono font-bold tracking-wider text-muted block mb-1">Campaign Priority</label>
-                <div className="flex gap-1 h-[44px] items-center">
-                  {(['low', 'medium', 'high'] as const).map((level) => (
-                    <button
-                      key={level}
-                      type="button"
-                      onClick={() => setPriority(level)}
-                      className={`flex-1 text-[10px] uppercase font-mono font-bold py-2 rounded-lg border transition-all ${
-                        priority === level 
-                          ? 'bg-accent/15 border-accent text-accent' 
-                          : 'bg-surface border-border-accent/30 text-muted hover:text-text-main'
-                      }`}
-                    >
-                      {level}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Simulated Live Direct Schedule block */}
-            <div className="pt-3 border-t border-border-accent/35 space-y-3">
-              <h4 className="text-[10px] uppercase font-mono font-bold tracking-widest text-[#22C55E]">Option A: Simulate Direct Push API</h4>
-              <p className="text-[11px] leading-relaxed text-muted font-sans">
-                Post instantly to your primary feed via Pulsr's virtual OAuth transmission framework. Adds slot automatically onto planner dashboard.
+              <textarea
+                value={draftText}
+                onChange={(e) => setDraftText(e.target.value)}
+                className="w-full h-32 text-xs font-sans rounded-xl bg-surface border border-border-accent/40 text-text-main p-3 focus:outline-none focus:border-accent/80 select-text resize-none leading-relaxed"
+                placeholder="Formulating caption..."
+              />
+              <p className="text-[10px] text-muted leading-tight">
+                💡 Clicking any platform below will <strong className="text-accent">automatically copy</strong> this live caption and launch the platform's composer with the text pre-filled.
               </p>
+            </div>
+
+            {/* Real-time Social Media Share API & Brand Integrations */}
+            <div className="pt-4 border-t border-border-accent/35 space-y-3">
+              <h4 className="text-[10px] uppercase font-mono font-bold tracking-widest text-[#22C55E]">Option A: Instant Social App Launcher</h4>
+              <p className="text-[11px] leading-relaxed text-muted font-sans">
+                Open your native device share sheets or launch optimized, pre-filled composer interfaces directly in your browser.
+              </p>
+
+              {/* Native browser share API */}
               <Button 
                 variant="primary" 
-                onClick={handleSimulatePublish}
-                className="w-full text-bg font-bold flex gap-1.5 h-11"
+                onClick={handleDirectShareAPI}
+                className="w-full text-white font-bold flex gap-1.5 h-11 bg-gradient-to-r from-accent to-emerald-500 hover:opacity-90 border-0 shadow-lg shadow-accent/10"
               >
-                <Globe className="h-4 w-4 text-bg" /> Connect & Schedule Directly
+                <Share2 className="h-4 w-4 text-white" /> Share via Device System Sheet
+              </Button>
+
+              {/* Quick Launch Icons Grid */}
+              <div className="grid grid-cols-3 gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleShareToPlatform('x')}
+                  className="bg-surface hover:bg-surface-accent border border-border-accent/40 rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 transition-all group cursor-pointer"
+                >
+                  <Twitter className="h-5 w-5 text-bright group-hover:text-accent transition-colors" />
+                  <span className="text-[10px] font-mono font-bold text-text-main group-hover:text-bright transition-colors">X / Twitter</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleShareToPlatform('linkedin')}
+                  className="bg-surface hover:bg-surface-accent border border-border-accent/40 rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 transition-all group cursor-pointer"
+                >
+                  <Linkedin className="h-5 w-5 text-[#0A66C2] group-hover:opacity-80 transition-opacity" />
+                  <span className="text-[10px] font-mono font-bold text-text-main group-hover:text-bright transition-colors">LinkedIn</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleShareToPlatform('facebook')}
+                  className="bg-surface hover:bg-surface-accent border border-border-accent/40 rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 transition-all group cursor-pointer"
+                >
+                  <Facebook className="h-5 w-5 text-[#1877F2] group-hover:opacity-80 transition-opacity" />
+                  <span className="text-[10px] font-mono font-bold text-text-main group-hover:text-bright transition-colors">Facebook</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleShareToPlatform('threads')}
+                  className="bg-surface hover:bg-surface-accent border border-border-accent/40 rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 transition-all group cursor-pointer"
+                >
+                  <Globe className="h-5 w-5 text-bright group-hover:text-accent transition-colors" />
+                  <span className="text-[10px] font-mono font-bold text-text-main group-hover:text-bright transition-colors">Threads</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleShareToPlatform('instagram')}
+                  className="bg-surface hover:bg-surface-accent border border-border-accent/40 rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 transition-all group cursor-pointer"
+                >
+                  <Instagram className="h-5 w-5 text-[#E1306C] group-hover:opacity-80 transition-opacity" />
+                  <span className="text-[10px] font-mono font-bold text-text-main group-hover:text-bright transition-colors">Instagram</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleShareToPlatform('tiktok')}
+                  className="bg-surface hover:bg-surface-accent border border-border-accent/40 rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 transition-all group cursor-pointer"
+                >
+                  <Smartphone className="h-5 w-5 text-[#FE2C55] group-hover:opacity-80 transition-opacity" />
+                  <span className="text-[10px] font-mono font-bold text-text-main group-hover:text-bright transition-colors">TikTok</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleShareToPlatform('whatsapp')}
+                  className="bg-surface hover:bg-surface-accent border border-border-accent/40 rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 transition-all group cursor-pointer"
+                >
+                  <MessageSquare className="h-5 w-5 text-[#25D366] group-hover:opacity-80 transition-opacity" />
+                  <span className="text-[10px] font-mono font-bold text-text-main group-hover:text-bright transition-colors">WhatsApp</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleShareToPlatform('telegram')}
+                  className="bg-surface hover:bg-surface-accent border border-border-accent/40 rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 transition-all group cursor-pointer"
+                >
+                  <Send className="h-5 w-5 text-[#0088cc] group-hover:opacity-80 transition-opacity" />
+                  <span className="text-[10px] font-mono font-bold text-text-main group-hover:text-bright transition-colors">Telegram</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleShareToPlatform('email')}
+                  className="bg-surface hover:bg-surface-accent border border-border-accent/40 rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 transition-all group cursor-pointer"
+                >
+                  <Mail className="h-5 w-5 text-accent group-hover:text-bright transition-colors" />
+                  <span className="text-[10px] font-mono font-bold text-text-main group-hover:text-bright transition-colors">Email</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Virtual Direct Scheduler block */}
+            <div className="pt-4 border-t border-border-accent/35 space-y-3.5">
+              <h4 className="text-[10px] uppercase font-mono font-bold tracking-widest text-[#22C55E]">Option B: Connect & Simulate Direct Schedule API</h4>
+              <p className="text-[11px] leading-relaxed text-muted font-sans">
+                Tweak mock scheduling parameters and push instantly to your virtual dashboard calendar.
+              </p>
+
+              {/* Form configuration fields */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] uppercase font-mono font-bold tracking-wider text-muted block mb-1">Target Platform</label>
+                  <select 
+                    value={platform} 
+                    onChange={(e) => setPlatform(e.target.value)}
+                    className="w-full text-xs font-mono rounded-xl bg-surface border border-border-accent/40 text-text-main p-2.5 h-[44px]"
+                  >
+                    <option value="Twitter/X">Twitter / X</option>
+                    <option value="LinkedIn">LinkedIn</option>
+                    <option value="Instagram">Instagram</option>
+                    <option value="Threads">Threads</option>
+                    <option value="TikTok">TikTok</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] uppercase font-mono font-bold tracking-wider text-muted block mb-1">Schedule date</label>
+                  <Input 
+                    type="date" 
+                    value={scheduleDate} 
+                    onChange={(e) => setScheduleDate(e.target.value)}
+                    className="text-xs h-[44px]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] uppercase font-mono font-bold tracking-wider text-muted block mb-1">Suggested hour</label>
+                  <Input 
+                    type="time" 
+                    value={scheduleTime} 
+                    onChange={(e) => setScheduleTime(e.target.value)}
+                    className="text-xs h-[44px]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] uppercase font-mono font-bold tracking-wider text-muted block mb-1">Campaign Priority</label>
+                  <div className="flex gap-1 h-[44px] items-center">
+                    {(['low', 'medium', 'high'] as const).map((level) => (
+                      <button
+                        key={level}
+                        type="button"
+                        onClick={() => setPriority(level)}
+                        className={`flex-1 text-[10px] uppercase font-mono font-bold py-2 rounded-lg border transition-all ${
+                          priority === level 
+                            ? 'bg-accent/15 border-accent text-accent' 
+                            : 'bg-surface border-border-accent/30 text-muted hover:text-text-main'
+                        }`}
+                      >
+                        {level}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <Button 
+                variant="secondary" 
+                onClick={handleSimulatePublish}
+                className="w-full text-bright border border-border-accent/50 font-bold flex gap-1.5 h-11 hover:bg-surface-accent"
+              >
+                <Calendar className="h-4 w-4 text-accent" /> Connect & Schedule Virtually
               </Button>
             </div>
 
             {/* Offline Export utilities row */}
             <div className="pt-4 border-t border-border-accent/35 space-y-3.5">
-              <h4 className="text-[10px] uppercase font-mono font-bold tracking-widest text-[#22C55E]">Option B: Offline Spreadsheet / Coding Feed Import</h4>
+              <h4 className="text-[10px] uppercase font-mono font-bold tracking-widest text-[#22C55E]">Option C: Offline Spreadsheet / Coding Feed Import</h4>
               <p className="text-[11px] leading-relaxed text-muted font-sans">
                 Download structured data modules containing high-converting copy, hashtags, optimization advice, and timing attributes to import directly into Buffer, Notion, or Hootsuite.
               </p>
