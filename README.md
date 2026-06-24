@@ -1,12 +1,12 @@
 # Pulsr AI - Secure Creator Content Strategy Workspace
 
-Genome AI is a production-grade content strategy and planning application designed specifically for creators, writers, and digital strategist networks. By leveraging a local-first zero-trust methodology coupled with defensive backend security layers, it enables users to secure high-signal industry analysis, draft engaging multi-platform campaigns, manage publications through an interactive visual scheduler, and chat securely with an adaptive AI mentor.
+Pulsr AI is a production-grade content strategy and planning application designed specifically for creators, writers, and digital strategist networks. By leveraging a local-first zero-trust methodology coupled with defensive backend security layers, it enables users to secure high-signal industry analysis, draft engaging multi-platform campaigns, manage publications through an interactive visual scheduler, and chat securely with an adaptive AI mentor.
 
 ---
 
 ## 🚀 Vision and Concept
 
-Unlike typical social analytics dashboards that broadcast user keys and inputs to unknown tracking APIs, **Genome AI** encapsulates all processes within your secure browser local-storage sandboxes and server-side defensive proxies.
+Unlike typical social analytics dashboards that broadcast user keys and inputs to unknown tracking APIs, **Pulsr AI** encapsulates all processes within your secure browser local-storage sandboxes and server-side defensive proxies.
 
 Genome AI empowers you to:
 - **Build Core Personas**: Set up your professional background, platform choice, voice style, and content goal parameters.
