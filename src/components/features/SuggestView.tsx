@@ -256,8 +256,9 @@ export function SuggestView({ prefilledTopic, clearPrefilledTopic }: SuggestView
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="space-y-3"
+              className="space-y-4"
             >
+              <ContentCardSkeleton />
               <ContentCardSkeleton />
             </motion.div>
           )}

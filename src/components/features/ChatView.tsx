@@ -107,7 +107,7 @@ export function ChatView() {
         throw new Error('Network issue or stream rejected by server');
       }
 
-      // Stream Reader consumption loop!
+      // Stream Reader consumption loop with ultra-responsive queue-based rendering!
       const reader = response.body?.getReader();
       const decoder = new TextDecoder('utf-8');
       
@@ -117,6 +117,26 @@ export function ChatView() {
 
       setWaitingForResponse(false); // Switch typing indicator to streaming cursor!
       let accumulatedOutput = '';
+      let renderedOutput = '';
+      let renderQueue: string[] = [];
+      let isRendering = false;
+
+      // High-performance scheduler to drain the stream characters fluidly
+      const processQueue = () => {
+        if (renderQueue.length === 0) {
+          isRendering = false;
+          return;
+        }
+        isRendering = true;
+        // Dynamically scale flow speed. If backlog is large (e.g. from a slow network burst), speed up to empty fast.
+        const drainCount = Math.max(1, Math.floor(renderQueue.length / 4));
+        const nextChars = renderQueue.splice(0, drainCount).join('');
+        renderedOutput += nextChars;
+        setStreamingContent(renderedOutput);
+        
+        // Fluid scheduling using standard requestAnimationFrame
+        requestAnimationFrame(processQueue);
+      };
 
       while (true) {
         const { done, value } = await reader.read();
@@ -124,7 +144,18 @@ export function ChatView() {
 
         const decodedChunk = decoder.decode(value, { stream: true });
         accumulatedOutput += decodedChunk;
-        setStreamingContent(accumulatedOutput);
+        
+        // Push raw characters into rendering pipeline
+        renderQueue.push(...decodedChunk.split(''));
+        if (!isRendering) {
+          processQueue();
+        }
+      }
+
+      // Final flushing to guarantee everything is printed
+      if (renderQueue.length > 0) {
+        renderedOutput += renderQueue.join('');
+        setStreamingContent(renderedOutput);
       }
 
       // Once finished completely, merge active stream to history state

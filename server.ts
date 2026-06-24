@@ -150,6 +150,28 @@ async function generateContentJSONWithRetry(aiClient: any, apiParams: any) {
   throw lastError || new Error('All models failed to generate content');
 }
 
+// --- LIGHTNING FAST IN-MEMORY API CACHE LAYER ---
+interface CacheEntry {
+  data: any;
+  timestamp: number;
+}
+const apiCache = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes TTL
+
+function getCachedData(key: string): any | null {
+  const entry = apiCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+    apiCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCachedData(key: string, data: any) {
+  apiCache.set(key, { data, timestamp: Date.now() });
+}
+
 // --- API ENDPOINTS ---
 
 // 1. Welcome Endpoint
@@ -159,6 +181,14 @@ app.post('/api/gemini/welcome', async (req: Request, res: Response) => {
     if (!profile) {
       return res.status(400).json({ error: 'Profile is required' });
     }
+
+    const cacheKey = `welcome_${profile.niche || ''}_${profile.profession || ''}_${profile.primaryPlatform || ''}_${profile.name || ''}`;
+    const cached = getCachedData(cacheKey);
+    if (cached) {
+      console.log(`[Pulsr Lightning Cache] Welcome for ${profile.name} returned instantly from cache.`);
+      return res.json(cached);
+    }
+
     const ai = getAIClient();
     const profileContext = buildProfileContext(profile);
 
@@ -177,6 +207,7 @@ ${JSON_FORCE_INSTRUCTION}`;
       },
     });
 
+    setCachedData(cacheKey, parsed);
     res.json(parsed);
   } catch (error: any) {
     console.warn('[Welcome API Exception] Falling back to high-fidelity local content:', error?.message || error);
@@ -203,6 +234,14 @@ app.post('/api/gemini/suggest', async (req: Request, res: Response) => {
     if (!profile || !platform || !format) {
       return res.status(400).json({ error: 'Profile, platform, and format are required' });
     }
+
+    const cacheKey = `suggest_${profile.niche || ''}_${platform}_${format}_${topic || ''}_${profile.tone || ''}`;
+    const cached = getCachedData(cacheKey);
+    if (cached) {
+      console.log(`[Pulsr Lightning Cache] Suggestion for ${platform}/${format} returned instantly from cache.`);
+      return res.json(cached);
+    }
+
     const ai = getAIClient();
     const profileContext = buildProfileContext(profile);
 
@@ -236,6 +275,7 @@ ${JSON_FORCE_INSTRUCTION}`;
       },
     });
 
+    setCachedData(cacheKey, parsed);
     res.json(parsed);
   } catch (error: any) {
     console.warn('[Suggest API Exception] Falling back to high-fidelity local content:', error?.message || error);
@@ -303,6 +343,14 @@ app.post('/api/gemini/trends', async (req: Request, res: Response) => {
     if (!profile) {
       return res.status(400).json({ error: 'Profile is required' });
     }
+
+    const cacheKey = `trends_${profile.niche || ''}`;
+    const cached = getCachedData(cacheKey);
+    if (cached) {
+      console.log(`[Pulsr Lightning Cache] Trends for niche: ${profile.niche} returned instantly from cache.`);
+      return res.json(cached);
+    }
+
     const ai = getAIClient();
     const profileContext = buildProfileContext(profile);
 
@@ -332,6 +380,7 @@ ${JSON_FORCE_INSTRUCTION}`;
       },
     });
 
+    setCachedData(cacheKey, parsed);
     res.json(parsed);
   } catch (error: any) {
     console.warn('[Trends API Exception] Falling back to high-fidelity local content:', error?.message || error);
@@ -424,6 +473,13 @@ app.post('/api/gemini/calendar', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Required fields missing: startDate, endDate, frequency' });
     }
 
+    const cacheKey = `calendar_${profile.niche || ''}_${startDate}_${endDate}_${frequency}_${theme || ''}`;
+    const cached = getCachedData(cacheKey);
+    if (cached) {
+      console.log(`[Pulsr Lightning Cache] Calendar returned instantly from cache.`);
+      return res.json(cached);
+    }
+
     const ai = getAIClient();
     const profileContext = buildProfileContext(profile);
 
@@ -459,6 +515,7 @@ ${JSON_FORCE_INSTRUCTION}`;
       },
     });
 
+    setCachedData(cacheKey, parsed);
     res.json(parsed);
   } catch (error: any) {
     console.warn('[Calendar API Exception] Falling back to high-fidelity local planning schedule:', error?.message || error);
@@ -620,6 +677,14 @@ app.post('/api/gemini/refine', async (req: Request, res: Response) => {
     if (!profile || !text) {
       return res.status(400).json({ error: 'Profile and text are required' });
     }
+
+    const cacheKey = `refine_${Buffer.from(text).toString('base64').slice(0, 40)}_${instruction || ''}`;
+    const cached = getCachedData(cacheKey);
+    if (cached) {
+      console.log('[Pulsr Lightning Cache] Post refinement returned instantly from cache.');
+      return res.json(cached);
+    }
+
     const ai = getAIClient();
     const profileContext = buildProfileContext(profile);
 
@@ -647,6 +712,7 @@ ${JSON_FORCE_INSTRUCTION}`;
       },
     });
 
+    setCachedData(cacheKey, parsed);
     res.json(parsed);
   } catch (error: any) {
     console.warn('[Refine API Exception] Falling back to high-fidelity local text optimization:', error?.message || error);

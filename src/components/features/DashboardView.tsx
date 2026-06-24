@@ -156,10 +156,18 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
         className="border-accent/20 bg-gradient-to-r from-card/85 to-surface/95 relative before:opacity-10"
       >
         {welcomeLoading ? (
-          <div className="space-y-3 py-1 animate-pulse">
-            <Skeleton className="h-4 w-1/3" />
-            <Skeleton className="h-5 w-5/6" />
-            <Skeleton className="h-4 w-2/3" />
+          <div className="space-y-4 py-2 animate-pulse">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-3 w-3 rounded-full bg-accent/30" />
+              <Skeleton className="h-3.5 w-40" />
+            </div>
+            <div className="space-y-2.5">
+              <Skeleton className="h-5 w-11/12" />
+              <Skeleton className="h-5 w-4/5" />
+            </div>
+            <div className="pt-2">
+              <Skeleton className="h-3.5 w-48" />
+            </div>
           </div>
         ) : (
           <div className="space-y-2 select-text">
@@ -187,10 +195,11 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
 
           {trendsLoading ? (
             <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-none animate-pulse">
-              <Skeleton className="h-8 w-24 rounded-full" />
-              <Skeleton className="h-8 w-32 rounded-full" />
-              <Skeleton className="h-8 w-20 rounded-full" />
-              <Skeleton className="h-8 w-28 rounded-full" />
+              <Skeleton className="h-8 w-28 rounded-full shrink-0" />
+              <Skeleton className="h-8 w-36 rounded-full shrink-0" />
+              <Skeleton className="h-8 w-24 rounded-full shrink-0" />
+              <Skeleton className="h-8 w-32 rounded-full shrink-0" />
+              <Skeleton className="h-8 w-28 rounded-full shrink-0" />
             </div>
           ) : (
             <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-none select-none scroll-smooth">
