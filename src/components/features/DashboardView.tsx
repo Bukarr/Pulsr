@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Sparkles, TrendingUp, Calendar, MessageSquare, Copy, Check, ArrowRight, Facebook, Linkedin, Instagram, Twitter } from 'lucide-react';
+import { Sparkles, TrendingUp, Calendar, MessageSquare, Copy, Check, ArrowRight, Facebook, Linkedin, Instagram, Twitter, Smartphone, Download } from 'lucide-react';
 import { useProfileStore } from '../../store/profileStore';
 import { useContentStore } from '../../store/contentStore';
 import { Card } from '../ui/Card';
@@ -12,19 +12,27 @@ import toast from 'react-hot-toast';
 
 interface DashboardViewProps {
   onNavigate: (tab: TabType, prefilledTopic?: string, prefilledPlatform?: string) => void;
+  onInstallApp?: () => void;
 }
 
-export function DashboardView({ onNavigate }: DashboardViewProps) {
+export function DashboardView({ onNavigate, onInstallApp }: DashboardViewProps) {
   const { profile } = useProfileStore();
   const { suggestions } = useContentStore();
 
   const [welcomeMsg, setWelcomeMsg] = useState('');
   const [welcomeLoading, setWelcomeLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isStandalone, setIsStandalone] = useState(false);
 
   // Dynamic trending chips loaded in background
   const [trendChips, setTrendChips] = useState<string[]>([]);
   const [trendsLoading, setTrendsLoading] = useState(true);
+
+  useEffect(() => {
+    // Check if currently running inside installed standalone PWA
+    const checkStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+    setIsStandalone(checkStandalone);
+  }, []);
 
   // 1. Fetch AI Welcome Message
   useEffect(() => {
@@ -215,6 +223,32 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
             </div>
           )}
         </div>
+      )}
+
+      {/* Progressive Web App Installer Callout Banner */}
+      {!isStandalone && onInstallApp && (
+        <Card className="bg-gradient-to-r from-accent/15 via-accent/5 to-surface border-accent/25 p-5 flex flex-col md:flex-row items-center justify-between gap-4 select-none animate-fade-in relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-2xl pointer-events-none group-hover:bg-accent/10 transition-all duration-300" />
+          <div className="space-y-1.5 text-left z-10">
+            <span className="text-[10px] uppercase font-mono font-extrabold text-accent flex items-center gap-1">
+              <Smartphone className="h-3.5 w-3.5 animate-bounce" /> Install Pulsr Web App
+            </span>
+            <h4 className="font-syne font-bold text-text-main text-sm sm:text-base leading-tight">
+              Get the native desktop or mobile workspace
+            </h4>
+            <p className="text-xs text-muted max-w-xl leading-relaxed">
+              Add Pulsr directly to your home screen or desktop. Runs inside its own sleek hardware window with offline resilience, gesture slide sheets, and optimized load performance.
+            </p>
+          </div>
+          <Button
+            onClick={onInstallApp}
+            variant="primary"
+            size="sm"
+            className="w-full md:w-auto font-mono font-bold text-[11px] uppercase tracking-wider shrink-0 flex items-center gap-1.5 justify-center py-2 px-4 shadow-[0_4px_20px_rgba(0,212,170,0.15)] hover:shadow-[0_4px_25px_rgba(0,212,170,0.25)] transition-all cursor-pointer z-10 active:scale-95 text-white"
+          >
+            <Download className="h-3.5 w-3.5" /> Install App
+          </Button>
+        </Card>
       )}
 
       {/* Direct Platform Drafting Section */}

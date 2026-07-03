@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useProfileStore } from '../../store/profileStore';
 import { useContentStore } from '../../store/contentStore';
 import { useCalendarStore } from '../../store/calendarStore';
@@ -24,15 +24,20 @@ import {
   Download, 
   Trash2, 
   History,
-  Clock
+  Clock,
+  Smartphone,
+  Apple,
+  Check,
+  Layers
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface SettingsViewProps {
   onReset: () => void;
+  onInstallApp?: () => void;
 }
 
-export function SettingsView({ onReset }: SettingsViewProps) {
+export function SettingsView({ onReset, onInstallApp }: SettingsViewProps) {
   const { profile, setProfile, resetProfile } = useProfileStore();
   const { suggestions, clearSuggestions, autoClearDays, setAutoClearDays, clearCacheOnExit, setClearCacheOnExit } = useContentStore();
   const { items, clearCalendar } = useCalendarStore();
@@ -44,6 +49,14 @@ export function SettingsView({ onReset }: SettingsViewProps) {
   const [isConfirmingWipeCalendar, setIsConfirmingWipeCalendar] = useState(false);
   const [isConfirmingFullReset, setIsConfirmingFullReset] = useState(false);
   const [isConfirmingResetLogs, setIsConfirmingResetLogs] = useState(false);
+  const [showManualGuide, setShowManualGuide] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+
+  useEffect(() => {
+    // Check if running inside installed standalone PWA
+    const checkStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+    setIsStandalone(checkStandalone);
+  }, []);
 
   // Edit states
   const [name, setName] = useState(profile?.name || '');
@@ -158,6 +171,99 @@ export function SettingsView({ onReset }: SettingsViewProps) {
             <span className="font-syne font-extrabold text-2xl text-warning block mt-1">{plannedPending}</span>
           </div>
         </div>
+      </Card>
+
+      {/* Progressive Web App (PWA) App Hub */}
+      <Card className="border-border-accent/40 bg-gradient-to-br from-card to-surface/30 p-5 select-none relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-2xl pointer-events-none group-hover:bg-accent/10 transition-all duration-300" />
+        
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 z-10 relative">
+          <div className="space-y-1.5 text-left">
+            <span className="text-[10px] uppercase font-mono font-extrabold text-accent flex items-center gap-1">
+              <Smartphone className="h-3.5 w-3.5 animate-pulse" /> PWA Native Application Hub
+            </span>
+            <h4 className="font-syne font-bold text-text-main text-sm sm:text-base leading-tight flex items-center gap-2">
+              Install Pulsr Content Strategist Studio
+              {isStandalone ? (
+                <span className="text-[10px] py-0.5 px-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full font-mono font-bold uppercase tracking-wider">
+                  Active (PWA)
+                </span>
+              ) : (
+                <span className="text-[10px] py-0.5 px-2 bg-accent/10 text-accent border border-accent/25 rounded-full font-mono font-bold uppercase tracking-wider">
+                  Installable
+                </span>
+              )}
+            </h4>
+            <p className="text-xs text-muted max-w-xl leading-relaxed">
+              Unlock a native desktop or mobile experience. Installing Pulsr enables offline resilience, full-canvas responsive layouts, lightning-fast launching from your home screen, and optimized AI content drafting.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2 w-full md:w-auto shrink-0">
+            {!isStandalone && onInstallApp && (
+              <Button
+                onClick={onInstallApp}
+                variant="primary"
+                size="sm"
+                className="font-mono font-bold text-[11px] uppercase tracking-wider py-2 px-4 shadow-[0_4px_20px_rgba(0,212,170,0.15)] hover:shadow-[0_4px_25px_rgba(0,212,170,0.25)] transition-all cursor-pointer active:scale-95"
+              >
+                <Download className="h-3.5 w-3.5 mr-1.5" /> Prompt Installation
+              </Button>
+            )}
+            <Button
+              onClick={() => setShowManualGuide(!showManualGuide)}
+              variant="secondary"
+              size="sm"
+              className="font-mono font-bold text-[11px] uppercase tracking-wider py-2 px-4 border border-border-accent/40 bg-surface hover:bg-card"
+            >
+              {showManualGuide ? 'Hide Instructions' : 'How to Install'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Manual Instructions Expandable Accordion */}
+        {showManualGuide && (
+          <div className="mt-5 pt-4 border-t border-border-accent/15 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs select-text animate-fade-in">
+            {/* Apple iOS / macOS Safari */}
+            <div className="bg-bg/40 border border-border-accent/15 p-3 rounded-xl space-y-2">
+              <span className="text-[10px] font-mono font-bold text-accent flex items-center gap-1">
+                <Apple className="h-3.5 w-3.5" /> Safari (iOS/macOS)
+              </span>
+              <ol className="list-decimal pl-4 space-y-1 text-muted text-[11px] leading-relaxed">
+                <li>Open the app in <span className="text-bright font-semibold">Safari</span>.</li>
+                <li>Tap the <span className="text-bright font-semibold">Share</span> button in the navigation bar.</li>
+                <li>Scroll down and select <span className="text-bright font-semibold">"Add to Home Screen"</span>.</li>
+                <li>Confirm by clicking <span className="text-bright font-semibold">"Add"</span>.</li>
+              </ol>
+            </div>
+
+            {/* Android / Desktop Google Chrome */}
+            <div className="bg-bg/40 border border-border-accent/15 p-3 rounded-xl space-y-2">
+              <span className="text-[10px] font-mono font-bold text-accent flex items-center gap-1">
+                <Smartphone className="h-3.5 w-3.5" /> Chrome / Edge
+              </span>
+              <ol className="list-decimal pl-4 space-y-1 text-muted text-[11px] leading-relaxed">
+                <li>Look for the <span className="text-bright font-semibold">App Install icon ⤓</span> in Chrome's URL bar.</li>
+                <li>Or tap the <span className="text-bright font-semibold">three-dot menu</span> in the top-right corner.</li>
+                <li>Select <span className="text-bright font-semibold">"Install Pulsr..."</span> or <span className="text-bright font-semibold">"Add to Home Screen"</span>.</li>
+                <li>Accept the installation popup.</li>
+              </ol>
+            </div>
+
+            {/* General PWA Info */}
+            <div className="bg-bg/40 border border-border-accent/15 p-3 rounded-xl space-y-2">
+              <span className="text-[10px] font-mono font-bold text-accent flex items-center gap-1">
+                <Layers className="h-3.5 w-3.5" /> PWA Capabilities
+              </span>
+              <ul className="list-disc pl-4 space-y-1 text-muted text-[11px] leading-relaxed">
+                <li>Runs inside its own native hardware window.</li>
+                <li>Removes the browser search bar and tab limits.</li>
+                <li>Caches essential elements for faster loading.</li>
+                <li>Fully supports multi-touch gesture sheets.</li>
+              </ul>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* 2. Developer / Profile Settings block */}

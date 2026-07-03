@@ -194,10 +194,11 @@ export default function App() {
               setShowLanding(true);
               setOnboardingPanel(true);
             }} 
+            onInstallApp={handleInstallApp}
           />
         );
       default:
-        return <DashboardView onNavigate={handleNavigateToSuggestWithTopic} />;
+        return <DashboardView onNavigate={handleNavigateToSuggestWithTopic} onInstallApp={handleInstallApp} />;
     }
   };
 
