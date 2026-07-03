@@ -24,13 +24,6 @@ import {
   Download, 
   Trash2, 
   History,
-  Smartphone,
-  Cpu,
-  Terminal,
-  Copy,
-  Check,
-  RotateCcw,
-  ShieldCheck,
   Clock
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -48,46 +41,6 @@ export function SettingsView({ onReset }: SettingsViewProps) {
   const [editMode, setEditMode] = useState(false);
   const [isConfirmingWipeDrafts, setIsConfirmingWipeDrafts] = useState(false);
 
-  // Capacitor Crossplatform states
-  const [appId, setAppId] = useState('com.pulsr.app');
-  const [appNameState, setAppNameState] = useState('Pulsr');
-  const [copiedScript, setCopiedScript] = useState<string | null>(null);
-  const [buildLogs, setBuildLogs] = useState<string[]>([]);
-  const [isCompiling, setIsCompiling] = useState(false);
-
-  const handleCopyScript = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedScript(text);
-    setTimeout(() => setCopiedScript(null), 1500);
-  };
-
-  const handleSimulateBuild = () => {
-    if (isCompiling) return;
-    setIsCompiling(true);
-    setBuildLogs([]);
-
-    const messages = [
-      `[pulsr-native-cli] Initializing Capacitor build with App ID: ${appId}...`,
-      '[pulsr-native-cli] Running Vite build bundle static compile...',
-      '[pulsr-native-cli] Vite bundle compiled successfully into /dist folder (2.1 MB).',
-      '[pulsr-native-cli] Syncing files with Capacitor native bridges...',
-      `[pulsr-native-cli] Copying web resources to iOS platform: ios/App/public...`,
-      `[pulsr-native-cli] Copying web resources to Android platform: android/app/src/main/assets/public...`,
-      '[pulsr-native-cli] Updating native dependencies & plugins...',
-      '[pulsr-native-cli] Native project synchronization complete! ✅',
-      '[pulsr-native-cli] Device target matches successfully. Ready to build IPA/APK!'
-    ];
-
-    messages.forEach((msg, idx) => {
-      setTimeout(() => {
-        setBuildLogs(prev => [...prev, msg]);
-        if (idx === messages.length - 1) {
-          setIsCompiling(false);
-          toast.success('Capacitor native builds compiled and synchronized!');
-        }
-      }, (idx + 1) * 600);
-    });
-  };
   const [isConfirmingWipeCalendar, setIsConfirmingWipeCalendar] = useState(false);
   const [isConfirmingFullReset, setIsConfirmingFullReset] = useState(false);
   const [isConfirmingResetLogs, setIsConfirmingResetLogs] = useState(false);
@@ -203,123 +156,6 @@ export function SettingsView({ onReset }: SettingsViewProps) {
           <div className="bg-bg/40 border border-border-accent/25 p-3 rounded-xl select-none text-center">
             <span className="text-[10px] uppercase font-mono tracking-widest text-muted block">Planned Actions</span>
             <span className="font-syne font-extrabold text-2xl text-warning block mt-1">{plannedPending}</span>
-          </div>
-        </div>
-      </Card>
-
-      {/* Mobile Cross-Platform Compilation Studio */}
-      <Card className="bg-gradient-to-br from-[#0F1E24]/60 to-surface/40 border-[#00D4AA]/20 shadow-[0_8px_30px_rgb(0,0,0,0.2)]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border-accent/20 pb-3 mb-4 gap-2">
-          <div className="flex items-center gap-2">
-            <Smartphone className="h-4.5 w-4.5 text-accent" />
-            <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-accent flex items-center gap-1.5">
-              Capacitor Cross-Platform Mobile Studio
-            </h3>
-          </div>
-          <Badge variant="accent" className="w-fit">iOS & Android Ready</Badge>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          {/* Form setup info */}
-          <div className="lg:col-span-5 space-y-4">
-            <div className="space-y-1">
-              <label className="text-[10px] font-mono uppercase tracking-wider text-muted font-bold block">Mobile Application ID</label>
-              <Input 
-                value={appId} 
-                onChange={(e) => setAppId(e.target.value)} 
-                placeholder="e.g. com.pulsr.app" 
-                className="font-mono text-xs"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[10px] font-mono uppercase tracking-wider text-muted font-bold block">Application Native Name</label>
-              <Input 
-                value={appNameState} 
-                onChange={(e) => setAppNameState(e.target.value)} 
-                placeholder="e.g. Pulsr" 
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-center text-[10px] font-mono">
-              <div className="bg-bg/40 border border-[#00D4AA]/15 p-2 rounded-xl">
-                <span className="text-muted block">iOS Target</span>
-                <span className="text-[#00D4AA] font-bold mt-1 block">Xcode Configured</span>
-              </div>
-              <div className="bg-bg/40 border border-[#00D4AA]/15 p-2 rounded-xl">
-                <span className="text-muted block">Android Target</span>
-                <span className="text-[#00D4AA] font-bold mt-1 block">Gradle v8.2 OK</span>
-              </div>
-            </div>
-
-            <Button
-              onClick={handleSimulateBuild}
-              disabled={isCompiling}
-              className="w-full text-xs font-mono py-2 bg-accent hover:bg-accent/80 text-white font-bold flex justify-center items-center gap-1.5"
-            >
-              {isCompiling ? (
-                <>
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin text-white" /> Syncing Platforms...
-                </>
-              ) : (
-                <>
-                  <Cpu className="h-3.5 w-3.5" /> Compile Capacitor Native Sync
-                </>
-              )}
-            </Button>
-          </div>
-
-          {/* Compilation Logs and CMD console */}
-          <div className="lg:col-span-7 flex flex-col gap-3">
-            <div className="space-y-1">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-muted font-bold block">Capacitor Native CLI Toolchain</span>
-              <div className="bg-bg/70 border border-border-accent/25 rounded-xl p-3 space-y-2.5 font-mono text-[11px]">
-                <div className="flex justify-between items-center border-b border-border-accent/10 pb-1.5 text-[10px] text-muted">
-                  <span>Step 1: Install Platforms</span>
-                  <button onClick={() => handleCopyScript('npm install @capacitor/ios @capacitor/android')} className="hover:text-text-main">
-                    {copiedScript === 'npm install @capacitor/ios @capacitor/android' ? <Check className="h-3 w-3 text-accent" /> : <Copy className="h-3 w-3" />}
-                  </button>
-                </div>
-                <code className="block text-accent font-medium leading-none">
-                  npm install @capacitor/ios @capacitor/android
-                </code>
-
-                <div className="flex justify-between items-center border-b border-border-accent/10 pt-1 pb-1.5 text-[10px] text-muted">
-                  <span>Step 2: Add Native Projects</span>
-                  <button onClick={() => handleCopyScript('npx cap add ios && npx cap add android')} className="hover:text-text-main">
-                    {copiedScript === 'npx cap add ios && npx cap add android' ? <Check className="h-3 w-3 text-accent" /> : <Copy className="h-3 w-3" />}
-                  </button>
-                </div>
-                <code className="block text-accent font-medium leading-none">
-                  npx cap add ios && npx cap add android
-                </code>
-
-                <div className="flex justify-between items-center border-b border-border-accent/10 pt-1 pb-1.5 text-[10px] text-muted">
-                  <span>Step 3: Build & Sync Web Assets</span>
-                  <button onClick={() => handleCopyScript('npm run build && npx cap sync')} className="hover:text-text-main">
-                    {copiedScript === 'npm run build && npx cap sync' ? <Check className="h-3 w-3 text-accent" /> : <Copy className="h-3 w-3" />}
-                  </button>
-                </div>
-                <code className="block text-accent font-medium leading-none">
-                  npm run build && npx cap sync
-                </code>
-              </div>
-            </div>
-
-            {/* Simulated Live Compiler logs output */}
-            <div className="flex-1 min-h-[90px] bg-black/40 border border-border-accent/20 rounded-xl p-3 font-mono text-[9px] text-[#00D4AA] space-y-1.5 max-h-[140px] overflow-y-auto scrollbar-none">
-              <div className="flex items-center justify-between border-b border-border-accent/10 pb-1 mb-1 text-[8px] text-muted uppercase">
-                <span>Capacitor Compiler Output Logs</span>
-                <span>{isCompiling ? 'Active Compiling' : 'Idle'}</span>
-              </div>
-              {buildLogs.length === 0 ? (
-                <span className="text-muted italic block py-2">Click "Compile Capacitor Native Sync" above to launch simulated device bundles.</span>
-              ) : (
-                buildLogs.map((log, i) => (
-                  <div key={i} className="animate-fade-in truncate">{log}</div>
-                ))
-              )}
-            </div>
           </div>
         </div>
       </Card>
