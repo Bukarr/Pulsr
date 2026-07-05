@@ -2,9 +2,6 @@ const CACHE_NAME = 'pulsr-cache-v1';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/src/main.tsx',
-  '/src/App.tsx',
-  '/src/index.css',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png'

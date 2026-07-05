@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
-import { WifiOff, Apple, Smartphone, Download, X } from 'lucide-react';
+import { WifiOff, Smartphone, Download, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useProfileStore } from './store/profileStore';
 import { useThemeStore, applyTheme } from './store/themeStore';
@@ -39,7 +39,6 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [isIosDevice, setIsIosDevice] = useState(false);
-  const [showIosGuide, setShowIosGuide] = useState(false);
 
   // Prefills targeting the Suggest Generation screen
   const [prefilledTopic, setPrefilledTopic] = useState('');
@@ -87,11 +86,10 @@ export default function App() {
         console.warn('Error launching install prompt:', err);
       }
     } else if (isIosDevice) {
-      setShowIosGuide(true);
+      toast.success("To install, tap the Share button in Safari, then select 'Add to Home Screen'.", { duration: 6000 });
       setShowInstallBanner(false);
     } else {
-      // Development or unsupported browser fallback
-      toast.success("Successfully installed Pulsr onto your desktop screen!");
+      toast.success("Tap your browser's menu (three dots or install icon) and select 'Install' or 'Add to Home Screen'.", { duration: 5000 });
       setShowInstallBanner(false);
     }
   };
@@ -303,41 +301,6 @@ export default function App() {
               className="text-muted hover:text-white p-1"
             >
               <X className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 6. iOS Manual PWA Install Guide Modal */}
-      {showIosGuide && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-surface border border-border-accent/30 rounded-3xl p-6 max-w-xs w-full text-center space-y-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col items-center">
-            <div className="bg-accent/10 w-12 h-12 rounded-2xl flex items-center justify-center border border-accent/20">
-              <Apple className="h-6 w-6 text-accent" />
-            </div>
-            <div className="space-y-1">
-              <h4 className="text-sm font-bold text-bright">iOS Safari Install Guide</h4>
-              <p className="text-xs text-muted">To install Pulsr onto your iPhone or iPad, please complete these steps manually in Safari:</p>
-            </div>
-            <div className="bg-bg/40 border border-border-accent/10 p-3 rounded-xl font-mono text-[10px] text-left space-y-2 text-text-main w-full">
-              <div className="flex items-start gap-2">
-                <span className="text-accent font-bold">1.</span>
-                <span>Tap the <span className="text-bright font-bold">Share</span> button at the bottom navigation bar.</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-accent font-bold">2.</span>
-                <span>Scroll down the share list and select <span className="text-bright font-bold">"Add to Home Screen"</span>.</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-accent font-bold">3.</span>
-                <span>Tap <span className="text-bright font-bold">"Add"</span> in the top-right corner.</span>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowIosGuide(false)}
-              className="w-full py-2 bg-border-accent/20 hover:bg-border-accent/30 text-text-main hover:text-white rounded-xl text-xs font-mono transition-all font-bold"
-            >
-              Close Guide
             </button>
           </div>
         </div>
